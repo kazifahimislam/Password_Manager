@@ -6,7 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -43,6 +45,8 @@ public class LoginActivity extends AppCompatActivity {
     GoogleSignInClient gsc;
     int sign_in_code = 123;
     FirebaseDatabase database;
+    ProgressBar progressBar;
+    ProgressBar progressBar2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,25 +63,17 @@ public class LoginActivity extends AppCompatActivity {
         Button gAuthButton = findViewById(R.id.gAuthButton);
         auth = FirebaseAuth.getInstance();
         database =  FirebaseDatabase.getInstance();
-        DatabaseReference ref = database.getReference("test");
-        ref.setValue("Hello, World!")
-                .addOnSuccessListener(aVoid -> {
-                    // Data was successfully written
-                    Log.d("DatabaseTest", "Data saved successfully");
-                    Toast.makeText(LoginActivity.this, "Data saved successfully", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    // Handle the failure
-                    Log.e("DatabaseTest", "Data save failed: " + e.getMessage());
-                    Toast.makeText(LoginActivity.this, "Data save failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id)).requestEmail().build();
 
 
         gsc = GoogleSignIn.getClient(this, gso);
+        progressBar = findViewById(R.id.progressBar);
+        progressBar2 = findViewById(R.id.newPgBar);
 
         gAuthButton.setOnClickListener(view -> {
+//            progressBar.setVisibility(View.VISIBLE);
+//            progressBar2.setVisibility(View.VISIBLE);
             
             signIn();
 
@@ -118,12 +114,14 @@ public class LoginActivity extends AppCompatActivity {
                             map.put("email",user.getEmail());
                             map.put("uid",user.getUid());
                             map.put("profile",user.getPhotoUrl().toString());
-                            database.getReference().child("users").child(user.getUid()).setValue(map).addOnFailureListener(e -> {
-                                // Handle the failure
-                                Toast.makeText(LoginActivity.this, "Data save failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                            });
-                            startActivity(new Intent(LoginActivity.this,MainActivity.class));
-                            finish();
+                            database.getReference().child("users").child(user.getUid()).setValue(map).addOnSuccessListener(aVoid -> {
+                                        Log.d("DatabaseSuccess", "Data saved successfully");
+                                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                        finish();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e("DatabaseError", "Data save failed: " + e.getMessage());
+                                    });
                         }else{
                             Toast.makeText(LoginActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
                         }
