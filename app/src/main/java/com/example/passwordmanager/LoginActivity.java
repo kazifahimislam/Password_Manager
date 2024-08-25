@@ -1,8 +1,4 @@
 package com.example.passwordmanager;
-
-import static com.google.firebase.auth.AuthKt.auth;
-
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,6 +15,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.passwordmanager.datasecurity.DataEncryption;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -26,17 +23,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.Firebase;
+
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.database.DatabaseReference;
+
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -46,7 +44,7 @@ public class LoginActivity extends AppCompatActivity {
     int sign_in_code = 123;
     FirebaseDatabase database;
     ProgressBar progressBar;
-    ProgressBar progressBar2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,11 +67,12 @@ public class LoginActivity extends AppCompatActivity {
 
         gsc = GoogleSignIn.getClient(this, gso);
         progressBar = findViewById(R.id.progressBar);
-        progressBar2 = findViewById(R.id.newPgBar);
+
 
         gAuthButton.setOnClickListener(view -> {
-//            progressBar.setVisibility(View.VISIBLE);
-//            progressBar2.setVisibility(View.VISIBLE);
+            gAuthButton.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
+
             
             signIn();
 
@@ -94,7 +93,7 @@ public class LoginActivity extends AppCompatActivity {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 auth(account.getIdToken());
             }catch (Exception e){
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT);
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -105,15 +104,48 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()){
+                        if (task.isSuccessful()) {
                             FirebaseUser user = auth.getCurrentUser();
-                            HashMap<String,Object> map = new HashMap<>();
+                            HashMap<String, Object> map = new HashMap<>();
                             assert user != null;
-                            map.put("id",user.getUid());
-                            map.put("name",user.getDisplayName());
-                            map.put("email",user.getEmail());
-                            map.put("uid",user.getUid());
-                            map.put("profile",user.getPhotoUrl().toString());
+                            DataEncryption dataEncryption = null;
+                            try {
+                                dataEncryption = new DataEncryption();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                            String encryptedName = "";
+                            String encryptedEmail = "";
+                            String encryptedUid = "";
+                            String encryptedProfile = "";
+
+                            try {
+                                encryptedName = dataEncryption.encrypt(Objects.requireNonNull(user.getDisplayName()));
+                            } catch (Exception e) {
+                                Toast.makeText(LoginActivity.this, "Failed to encrypt user name", Toast.LENGTH_SHORT).show();
+                                
+                            }
+                            try {
+                                encryptedEmail = dataEncryption.encrypt(Objects.requireNonNull(user.getEmail()));
+                            } catch (Exception e) {
+                                Toast.makeText(LoginActivity.this, "Failed to encrypt user email", Toast.LENGTH_SHORT).show();
+                            }
+                            try {
+                                encryptedUid = dataEncryption.encrypt(user.getUid());
+                            } catch (Exception e) {
+                                Toast.makeText(LoginActivity.this, "Failed to encrypt user uid", Toast.LENGTH_SHORT).show();
+                            }
+                            try {
+                                encryptedProfile = dataEncryption.encrypt(Objects.requireNonNull(user.getPhotoUrl()).toString());
+                            } catch (Exception e) {
+                                Toast.makeText(LoginActivity.this, "Failed to encrypt user Profile Picture", Toast.LENGTH_SHORT).show();
+                            }
+
+
+                            map.put("name", encryptedName);
+                            map.put("email", encryptedEmail);
+                            map.put("uid", encryptedUid);
+                            map.put("profilePic", encryptedProfile);
                             database.getReference().child("users").child(user.getUid()).setValue(map).addOnSuccessListener(aVoid -> {
                                         Log.d("DatabaseSuccess", "Data saved successfully");
                                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
@@ -123,6 +155,9 @@ public class LoginActivity extends AppCompatActivity {
                                         Log.e("DatabaseError", "Data save failed: " + e.getMessage());
                                     });
                         }else{
+                            progressBar.setVisibility(View.GONE);
+                            Button gAuthButton = findViewById(R.id.gAuthButton);
+                            gAuthButton.setVisibility(View.VISIBLE);
                             Toast.makeText(LoginActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
                         }
                     }
