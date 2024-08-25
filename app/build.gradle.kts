@@ -35,6 +35,9 @@ android {
 dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
+
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation (libs.firebase.auth.v2150)
     implementation (libs.play.services.auth)

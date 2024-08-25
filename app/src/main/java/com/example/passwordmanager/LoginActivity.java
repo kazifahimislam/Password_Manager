@@ -58,6 +58,14 @@ public class LoginActivity extends AppCompatActivity {
 
         FirebaseApp.initializeApp(this);
 
+        auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            // User is logged in, go directly to MainActivity
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            finish();
+            return;  // Exit this method so the login process isn't triggered again
+        }
+
         Button gAuthButton = findViewById(R.id.gAuthButton);
         auth = FirebaseAuth.getInstance();
         database =  FirebaseDatabase.getInstance();
@@ -114,6 +122,9 @@ public class LoginActivity extends AppCompatActivity {
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
+                            String profilePicUrl = Objects.requireNonNull(user.getPhotoUrl()).toString();
+
+
                             String encryptedName = "";
                             String encryptedEmail = "";
                             String encryptedUid = "";
@@ -136,7 +147,7 @@ public class LoginActivity extends AppCompatActivity {
                                 Toast.makeText(LoginActivity.this, "Failed to encrypt user uid", Toast.LENGTH_SHORT).show();
                             }
                             try {
-                                encryptedProfile = dataEncryption.encrypt(Objects.requireNonNull(user.getPhotoUrl()).toString());
+                                encryptedProfile = dataEncryption.encrypt(profilePicUrl);
                             } catch (Exception e) {
                                 Toast.makeText(LoginActivity.this, "Failed to encrypt user Profile Picture", Toast.LENGTH_SHORT).show();
                             }
@@ -148,7 +159,11 @@ public class LoginActivity extends AppCompatActivity {
                             map.put("profilePic", encryptedProfile);
                             database.getReference().child("users").child(user.getUid()).setValue(map).addOnSuccessListener(aVoid -> {
                                         Log.d("DatabaseSuccess", "Data saved successfully");
-                                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                        progressBar.setVisibility(View.GONE);
+                                        Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                                        Intent i = new Intent(LoginActivity.this, MainActivity.class);
+                                        i.putExtra("profilePic", user.getPhotoUrl().toString());
+                                        startActivity(i);
                                         finish();
                                     })
                                     .addOnFailureListener(e -> {
