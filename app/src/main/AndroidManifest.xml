@@ -12,6 +12,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PasswordManager"
         tools:targetApi="31">
+        <service
+            android:name=".MyAutofillService"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".LoginActivity"
             android:exported="true">

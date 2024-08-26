@@ -1,10 +1,12 @@
 package com.example.passwordmanager;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ProgressBar;
+
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -43,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
     GoogleSignInClient gsc;
     int sign_in_code = 123;
     FirebaseDatabase database;
-    ProgressBar progressBar;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,14 +76,12 @@ public class LoginActivity extends AppCompatActivity {
 
 
         gsc = GoogleSignIn.getClient(this, gso);
-        progressBar = findViewById(R.id.progressBar);
+
 
 
         gAuthButton.setOnClickListener(view -> {
             gAuthButton.setVisibility(View.GONE);
-            progressBar.setVisibility(View.VISIBLE);
 
-            
             signIn();
 
         });
@@ -89,6 +89,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private void signIn() {
         Intent i = gsc.getSignInIntent();
+        Dialog dialog = new Dialog(LoginActivity.this);
+        dialog.setTitle("Login in ....");
+
         startActivityIfNeeded(i,sign_in_code);
     }
 
@@ -110,6 +113,7 @@ public class LoginActivity extends AppCompatActivity {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken,null);
         auth.signInWithCredential(credential)
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
@@ -159,7 +163,7 @@ public class LoginActivity extends AppCompatActivity {
                             map.put("profilePic", encryptedProfile);
                             database.getReference().child("users").child(user.getUid()).setValue(map).addOnSuccessListener(aVoid -> {
                                         Log.d("DatabaseSuccess", "Data saved successfully");
-                                        progressBar.setVisibility(View.GONE);
+
                                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                                         Intent i = new Intent(LoginActivity.this, MainActivity.class);
                                         i.putExtra("profilePic", user.getPhotoUrl().toString());
@@ -170,7 +174,7 @@ public class LoginActivity extends AppCompatActivity {
                                         Log.e("DatabaseError", "Data save failed: " + e.getMessage());
                                     });
                         }else{
-                            progressBar.setVisibility(View.GONE);
+
                             Button gAuthButton = findViewById(R.id.gAuthButton);
                             gAuthButton.setVisibility(View.VISIBLE);
                             Toast.makeText(LoginActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
